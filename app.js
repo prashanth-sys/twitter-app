@@ -132,6 +132,7 @@ app.get(
   }
 );
 //api 4
+
 app.get("/user/following/", authenticationToken, async (request, response) => {
   const userQuery = `
     SELECT 
@@ -139,7 +140,7 @@ app.get("/user/following/", authenticationToken, async (request, response) => {
     FROM
     user,follower
     WHERE
-    follower.following_user_id = ${user.user_id};`;
+    follower.follower_user_id = user.user_id;`;
   const users = await db.all(userQuery);
   response.send(users);
 });
@@ -166,14 +167,27 @@ app.get("/tweets/:tweetId/", async (request, response) => {
     response.send("Invalid Request");
   } else {
     const userQuery = `
-        SELECT 
-        tweet.tweet,
-        FROM
-        tweet,like,replay
-        WHERE 
-        tweet_id = ${tweetId};`;
+    SELECT 
+    tweet.tweet
+    FROM
+    tweet
+    LEFT JOIN like ON tweet.tweet_id = like.tweet_id
+    LEFT JOIN reply ON tweet.tweet_id = reply.tweet_id
+    WHERE 
+    tweet.tweet_id = ${tweetId};`;
+
+    console.log("SQL Query:", userQuery); // Log the SQL query being executed
+
     const tweet = await db.get(userQuery);
-    response.send(tweet);
+
+    console.log("Tweet Data:", tweet); // Log the data returned from the database
+
+    if (tweet === null) {
+      response.status(404); // Not Found
+      response.send("Tweet not found");
+    } else {
+      response.send(tweet);
+    }
   }
 });
 
